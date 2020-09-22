@@ -28,7 +28,7 @@ func main() {
 	spew.Dump("User Info: %+v\n", userInfo)
 
 	// process sleep data
-	body, err = makeRequest("/v1/sleep?start=2020-09-20&end=2020-09-21")
+	body, err = makeRequest("/v1/sleep?start=2020-09-20&end=2020-09-21") // TODO: parameterize dates
 	check(err)
 	var sleepSummary interface{}
 	err = json.Unmarshal(body, &sleepSummary)
@@ -43,6 +43,8 @@ type UserInfo struct {
 	Gender string
 	Email  string
 }
+
+// TODO: add only necessary fields in sleep summary, with struct
 
 func makeRequest(path string) ([]byte, error) {
 	// create request
