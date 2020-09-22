@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func check(e error) {
@@ -15,13 +17,23 @@ func check(e error) {
 }
 
 func main() {
+	spew.Config.DisablePointerAddresses = true
+
 	// process user info
 	body, err := makeRequest("/v1/userinfo")
 	check(err)
 	var userInfo *UserInfo
 	err = json.Unmarshal(body, &userInfo)
 	check(err)
-	fmt.Printf("UserInfo: %+v\n", userInfo)
+	spew.Dump("User Info: %+v\n", userInfo)
+
+	// process sleep data
+	body, err = makeRequest("/v1/sleep?start=2020-09-20&end=2020-09-21")
+	check(err)
+	var sleepSummary interface{}
+	err = json.Unmarshal(body, &sleepSummary)
+	check(err)
+	spew.Dump("Sleep Summary: %+v\n", sleepSummary)
 }
 
 type UserInfo struct {
