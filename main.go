@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -17,6 +18,7 @@ func check(e error) {
 }
 
 func main() {
+	start, end := genDatesByDaysOfDuration(1)
 	spew.Config.DisablePointerAddresses = true
 
 	// process user info
@@ -28,12 +30,22 @@ func main() {
 	spew.Dump("User Info: %+v\n", userInfo)
 
 	// process sleep data
-	body, err = makeRequest("/v1/sleep?start=2020-09-20&end=2020-09-21") // TODO: parameterize dates
+	body, err = makeRequest(fmt.Sprintf("/v1/sleep?start=%s&end=%s", start, end))
+	fmt.Println(fmt.Sprintf("/v1/sleep?start=%s&end=%s", start, end))
 	check(err)
 	var sleepSummary interface{}
 	err = json.Unmarshal(body, &sleepSummary)
 	check(err)
 	spew.Dump("Sleep Summary: %+v\n", sleepSummary)
+}
+
+func genDatesByDaysOfDuration(days int64) (startStr string, endStr string) {
+	duration := time.Hour * 24 * time.Duration(days)
+	end := time.Now()
+	endStr = end.Format("2006-01-02")
+	start := end.Add(-duration)
+	startStr = start.Format("2006-01-02")
+	return startStr, endStr
 }
 
 type UserInfo struct {
