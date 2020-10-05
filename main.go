@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func check(e error) {
@@ -18,8 +20,11 @@ func check(e error) {
 }
 
 func main() {
-	start, end := genDatesByDaysOfDuration(1)
-	spew.Config.DisablePointerAddresses = true
+	durationDays, err := strconv.Atoi(os.Getenv("DURATION_DAYS"))
+	if err != nil {
+		durationDays = 1
+	}
+	start, end := genDatesByDaysOfDuration(durationDays)
 
 	// process user info
 	body, err := makeRequest("/v1/userinfo")
@@ -27,7 +32,7 @@ func main() {
 	var userInfo *UserInfo
 	err = json.Unmarshal(body, &userInfo)
 	check(err)
-	spew.Dump("User Info: %+v\n", userInfo)
+	log.Printf("User Info: %#v\n", userInfo)
 
 	// process sleep data
 	body, err = makeRequest(fmt.Sprintf("/v1/sleep?start=%s&end=%s", start, end))
@@ -35,11 +40,11 @@ func main() {
 	var sleepSummaries SleepSummaries
 	err = json.Unmarshal(body, &sleepSummaries)
 	check(err)
-	spew.Dump("Sleep Summary: %#v\n", sleepSummaries)
+	log.Printf("Sleep Summary: %#v\n", sleepSummaries)
 }
 
-func genDatesByDaysOfDuration(days int64) (startStr string, endStr string) {
-	duration := time.Hour * 24 * time.Duration(days)
+func genDatesByDaysOfDuration(days int) (startStr string, endStr string) {
+	duration := time.Hour * 24 * time.Duration(int64(days))
 	end := time.Now()
 	endStr = end.Format("2006-01-02")
 	start := end.Add(-duration)
@@ -115,4 +120,15 @@ func makeRequest(path string) ([]byte, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	return body, nil
+}
+
+// Trigger is the payload of a Pub/Sub event.
+type Trigger struct {
+	Data []byte `json:"data"`
+}
+
+// HelloPubSub consumes a Pub/Sub message.
+func TriggerRun(ctx context.Context, m Trigger) error {
+	main()
+	return nil
 }
