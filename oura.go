@@ -1,4 +1,4 @@
-package main
+package oura
 
 import (
 	"context"
@@ -10,6 +10,9 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
 func check(e error) {
@@ -19,7 +22,7 @@ func check(e error) {
 	}
 }
 
-func main() {
+func run() {
 	durationDays, err := strconv.Atoi(os.Getenv("DURATION_DAYS"))
 	if err != nil {
 		durationDays = 1
@@ -41,6 +44,7 @@ func main() {
 	err = json.Unmarshal(body, &sleepSummaries)
 	check(err)
 	log.Printf("Sleep Summary: %#v\n", sleepSummaries)
+
 }
 
 func genDatesByDaysOfDuration(days int) (startStr string, endStr string) {
@@ -108,7 +112,12 @@ func makeRequest(path string) ([]byte, error) {
 	}
 	req.URL.Scheme = "https"
 	req.URL.Host = "api.ouraring.com"
-	token, err := ioutil.ReadFile("bearer.token")
+	var token []byte
+	if err != nil {
+		token, err = ioutil.ReadFile("bearer.token")
+		check(err)
+	}
+
 	check(err)
 	req.Header.Add("Authorization", string(token))
 
@@ -122,6 +131,27 @@ func makeRequest(path string) ([]byte, error) {
 	return body, nil
 }
 
+func fetchOuraKey() []byte {
+	// Create the client.
+	ctx := context.Background()
+	ouraClient, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("failed to setup client: %v", err)
+	}
+
+	// Build the request.
+	accessRequest := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: "oura-key",
+	}
+
+	// Call the API.
+	result, err := ouraClient.AccessSecretVersion(ctx, accessRequest)
+	if err != nil {
+		log.Fatalf("failed to access secret version: %v", err)
+	}
+	return result.Payload.Data
+}
+
 // Trigger is the payload of a Pub/Sub event.
 type Trigger struct {
 	Data []byte `json:"data"`
@@ -129,6 +159,6 @@ type Trigger struct {
 
 // HelloPubSub consumes a Pub/Sub message.
 func TriggerRun(ctx context.Context, m Trigger) error {
-	main()
+	run()
 	return nil
 }
