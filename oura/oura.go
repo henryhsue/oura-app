@@ -22,7 +22,7 @@ func check(e error) {
 	}
 }
 
-func run() {
+func Run() {
 	durationDays, err := strconv.Atoi(os.Getenv("DURATION_DAYS"))
 	if err != nil {
 		durationDays = 1
@@ -112,8 +112,9 @@ func makeRequest(path string) ([]byte, error) {
 	}
 	req.URL.Scheme = "https"
 	req.URL.Host = "api.ouraring.com"
-	var token []byte
+	token, err := fetchOuraKey()
 	if err != nil {
+		log.Printf("reading token locally")
 		token, err = ioutil.ReadFile("bearer.token")
 		check(err)
 	}
@@ -131,25 +132,31 @@ func makeRequest(path string) ([]byte, error) {
 	return body, nil
 }
 
-func fetchOuraKey() []byte {
+func fetchOuraKey() ([]byte, error) {
 	// Create the client.
 	ctx := context.Background()
 	ouraClient, err := secretmanager.NewClient(ctx)
 	if err != nil {
-		log.Fatalf("failed to setup client: %v", err)
+		log.Printf("failed to setup client: %v", err)
+		return nil, err
 	}
 
 	// Build the request.
+	projectID, err := strconv.Atoi(os.Getenv("PROJECT_ID"))
+	if err != nil {
+		return nil, err
+	}
 	accessRequest := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: "oura-key",
+		Name: fmt.Sprintf("projects/%v/secrets/oura-key/versions/1", projectID),
 	}
 
 	// Call the API.
 	result, err := ouraClient.AccessSecretVersion(ctx, accessRequest)
 	if err != nil {
-		log.Fatalf("failed to access secret version: %v", err)
+		log.Printf("failed to access secret version: %v", err)
+		return nil, err
 	}
-	return result.Payload.Data
+	return result.Payload.Data, nil
 }
 
 // Trigger is the payload of a Pub/Sub event.
@@ -159,6 +166,6 @@ type Trigger struct {
 
 // HelloPubSub consumes a Pub/Sub message.
 func TriggerRun(ctx context.Context, m Trigger) error {
-	run()
+	Run()
 	return nil
 }
