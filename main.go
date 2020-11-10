@@ -1,9 +1,8 @@
 package main
 
-import (
-	"github.com/henryhsue/oura-app/oura"
-)
+import "github.com/henryhsue/oura-app/sheets"
 
 func main() {
-	oura.Run()
+	//oura.Run()
+	sheets.RunSheets()
 }
