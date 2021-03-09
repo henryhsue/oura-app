@@ -97,6 +97,21 @@ func WriteToSheet() {
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
 	}
 
+	writeRange := "Sheet1"
+	rb := &sheets.ValueRange{
+		MajorDimension: "ROWS",
+		Values: [][]interface{}{
+			{1, 2, 3},
+		},
+	}
+
+	valueInputOption := "RAW"
+	insertDataOption := "INSERT_ROWS"
+	_, err = srv.Spreadsheets.Values.Append(spreadsheetId, writeRange, rb).ValueInputOption(valueInputOption).InsertDataOption(insertDataOption).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if len(resp.Values) == 0 {
 		fmt.Println("No data found.")
 	} else {
