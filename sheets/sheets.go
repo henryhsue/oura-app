@@ -55,6 +55,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 	defer f.Close()
 	tok := &oauth2.Token{}
 	err = json.NewDecoder(f).Decode(tok)
+	log.Println(tok)
 	return tok, err
 }
 
@@ -69,7 +70,7 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func RunSheets() {
+func WriteToSheet() {
 	b, err := ioutil.ReadFile("sheets/credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
@@ -89,8 +90,8 @@ func RunSheets() {
 
 	// Prints the names and majors of students in a sample spreadsheet:
 	// https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-	spreadsheetId := "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-	readRange := "Class Data!A2:E"
+	spreadsheetId := "1M58uQxSne6pDV7te5qCP59xeOEeE_i7rbZoZK5sQi7U"
+	readRange := "Sheet1!A:A"
 	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
@@ -99,10 +100,8 @@ func RunSheets() {
 	if len(resp.Values) == 0 {
 		fmt.Println("No data found.")
 	} else {
-		fmt.Println("Name, Major:")
 		for _, row := range resp.Values {
-			// Print columns A and E, which correspond to indices 0 and 4.
-			fmt.Printf("%s, %s\n", row[0], row[4])
+			fmt.Printf("%s\n", row[0])
 		}
 	}
 }

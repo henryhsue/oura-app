@@ -13,6 +13,8 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
+
+	"github.com/henryhsue/oura-app/sheets"
 )
 
 func check(e error) {
@@ -30,21 +32,25 @@ func Run() {
 	start, end := genDatesByDaysOfDuration(durationDays)
 
 	// process user info
-	body, err := makeRequest("/v1/userinfo")
-	check(err)
-	var userInfo *UserInfo
-	err = json.Unmarshal(body, &userInfo)
-	check(err)
-	log.Printf("User Info: %#v\n", userInfo)
+	/*
+		body, err := makeRequest("/v1/userinfo")
+		check(err)
+		var userInfo *UserInfo
+		err = json.Unmarshal(body, &userInfo)
+		check(err)
+		log.Printf("User Info: %#v\n", userInfo)
+	*/
 
 	// process sleep data
-	body, err = makeRequest(fmt.Sprintf("/v1/sleep?start=%s&end=%s", start, end))
+	body, err := makeRequest(fmt.Sprintf("/v1/sleep?start=%s&end=%s", start, end))
 	check(err)
 	var sleepSummaries SleepSummaries
 	err = json.Unmarshal(body, &sleepSummaries)
 	check(err)
 	log.Printf("Sleep Summary: %#v\n", sleepSummaries)
 
+	// put sleep data into spreadsheet
+	sheets.WriteToSheet()
 }
 
 func genDatesByDaysOfDuration(days int) (startStr string, endStr string) {
